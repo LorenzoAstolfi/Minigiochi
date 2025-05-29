@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Sfondo chiaro */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 8px;
+            background-color: #333;
+            border-radius: 1rem;
+            padding: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #e2e8f0; /* Grigio chiaro per le celle */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease-in-out;
+            color: #333;
+        }
+        .cell:hover {
+            background-color: #cbd5e1; /* Grigio leggermente più scuro al passaggio del mouse */
+        }
+        .cell.X {
+            color: #ef4444; /* Rosso per la X */
+        }
+        .cell.O {
+            color: #3b82f6; /* Blu per la O */
+        }
+        .status {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        .button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 1.5rem;
+        }
+        .button:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-lg w-full">
+        <h1 class="text-4xl font-bold text-gray-800 mb-6">Tris</h1>
+
+        <div id="game-status" class="status text-gray-700 mb-6">È il turno di: X</div>
+
+        <div class="board" id="game-board">
+            </div>
+
+        <button id="reset-button" class="button bg-blue-500 text-white hover:bg-blue-600 mt-8">Ricomincia Partita</button>
+        <a href="index.html" class="button bg-gray-300 text-gray-800 hover:bg-gray-400 block w-auto mx-auto mt-4 no-underline">Torna al Menu</a>
+    </div>
+
+    <script>
+        const board = document.getElementById('game-board');
+        const statusDisplay = document.getElementById('game-status');
+        const resetButton = document.getElementById('reset-button');
+        let cells = [];
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let gameState = ['', '', '', '', '', '', '', '', '']; // Rappresenta lo stato del tabellone
+
+        // Condizioni di vittoria
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Righe
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Colonne
+            [0, 4, 8], [2, 4, 6]             // Diagonali
+        ];
+
+        // Funzione per inizializzare il tabellone
+        function initializeGame() {
+            // Pulisce le celle esistenti
+            board.innerHTML = '';
+            cells = [];
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            currentPlayer = 'X';
+            statusDisplay.textContent = `È il turno di: ${currentPlayer}`;
+
+            // Crea 9 celle e le aggiunge al tabellone
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i; // Aggiunge un indice per identificare la cella
+                cell.addEventListener('click', handleCellClick);
+                board.appendChild(cell);
+                cells.push(cell);
+            }
+        }
+
+        // Gestisce il click su una cella
+        function handleCellClick(event) {
+            const clickedCell = event.target;
+            const clickedCellIndex = parseInt(clickedCell.dataset.index);
+
+            // Controlla se la cella è già occupata o se il gioco è finito
+            if (gameState[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            // Aggiorna lo stato del gioco e l'interfaccia utente
+            gameState[clickedCellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+            clickedCell.classList.add(currentPlayer); // Aggiunge la classe per il colore
+
+            handleResultValidation(); // Controlla se c'è un vincitore o un pareggio
+        }
+
+        // Controlla se c'è un vincitore o un pareggio
+        function handleResultValidation() {
+            let roundWon = false;
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = gameState[winCondition[0]];
+                let b = gameState[winCondition[1]];
+                let c = gameState[winCondition[2]];
+
+                if (a === '' || b === '' || c === '') {
+                    continue; // Salta se una cella è vuota
+                }
+                if (a === b && b === c) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusDisplay.textContent = `Il giocatore ${currentPlayer} ha vinto!`;
+                gameActive = false;
+                return;
+            }
+
+            // Controlla per il pareggio (se tutte le celle sono piene e nessuno ha vinto)
+            let roundDraw = !gameState.includes('');
+            if (roundDraw) {
+                statusDisplay.textContent = `Pareggio!`;
+                gameActive = false;
+                return;
+            }
+
+            // Se nessuno ha vinto e non è un pareggio, cambia giocatore
+            changePlayer();
+        }
+
+        // Cambia il giocatore corrente
+        function changePlayer() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            statusDisplay.textContent = `È il turno di: ${currentPlayer}`;
+        }
+
+        // Gestisce il reset del gioco
+        resetButton.addEventListener('click', initializeGame);
+
+        // Inizializza il gioco al caricamento della pagina
+        window.onload = initializeGame;
+    </script>
+</body>
+</html>
